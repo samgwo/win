@@ -116,3 +116,50 @@ func BoolToBOOL(value bool) BOOL {
 
 	return 0
 }
+
+func UintPtrToString(uintPtr uintptr) string {
+	if uintPtr == 0 {
+		return ""
+	}
+
+	return syscall.UTF16ToString((*[1 << 16]uint16)(unsafe.Pointer(uintPtr))[0:])
+}
+
+func UTF8PtrToSting(uintPtr uintptr) string {
+	if uintPtr == 0 {
+		return ""
+	}
+
+	b := (*[1 << 16]byte)(unsafe.Pointer(uintPtr))[0:]
+	for i, v := range b {
+		if v == 0 {
+			b = b[0:i]
+			break
+		}
+	}
+
+	return UTF8Decode(b)
+}
+
+func UTF8Decode(b []byte) (str string) {
+	for len(b) > 0 {
+		s, size := utf8.DecodeRune(b)
+		str += string(s)
+		b = b[size:]
+	}
+
+	return
+}
+
+func StringToUintPtr(str string) uintptr {
+	return uintptr(unsafe.Pointer(syscall.StringToUTF16Ptr(str)))
+}
+
+func StringToUTF16Ptr(str string) *uint16 {
+	return syscall.StringToUTF16Ptr(str)
+}
+
+func StringToBytePtr(str string) *byte {
+	return syscall.StringBytePtr(str)
+}
+
