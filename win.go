@@ -9,6 +9,7 @@ package win
 import (
 	"runtime"
 	"syscall"
+	"unicode/utf8"
 	"unsafe"
 )
 
