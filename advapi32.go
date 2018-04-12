@@ -28,12 +28,6 @@ const (
 	ERROR_NO_MORE_ITEMS = 259
 )
 
-type (
-	ACCESS_MASK uint32
-	HKEY        HANDLE
-	REGSAM      ACCESS_MASK
-)
-
 const (
 	READ_CONTROL         = 0x00020000
 	STANDARD_RIGHTS_READ = READ_CONTROL
@@ -49,8 +43,35 @@ const (
 	TOKEN_ADJUST_GROUPS     = 0x0040
 	TOKEN_ADJUST_DEFAULT    = 0x0080
 	TOKEN_ADJUST_SESSIONID  = 0x0100
+
 	TOKEN_READ = STANDARD_RIGHTS_READ | TOKEN_QUERY
 )
+
+type (
+	ACCESS_MASK uint32
+	HKEY        HANDLE
+	REGSAM      ACCESS_MASK
+)
+
+const (
+	REG_NONE      uint64 = 0 // No value type
+	REG_SZ               = 1 // Unicode nul terminated string
+	REG_EXPAND_SZ        = 2 // Unicode nul terminated string
+	// (with environment variable references)
+	REG_BINARY                     = 3 // Free form binary
+	REG_DWORD                      = 4 // 32-bit number
+	REG_DWORD_LITTLE_ENDIAN        = 4 // 32-bit number (same as REG_DWORD)
+	REG_DWORD_BIG_ENDIAN           = 5 // 32-bit number
+	REG_LINK                       = 6 // Symbolic Link (unicode)
+	REG_MULTI_SZ                   = 7 // Multiple Unicode strings
+	REG_RESOURCE_LIST              = 8 // Resource list in the resource map
+	REG_FULL_RESOURCE_DESCRIPTOR   = 9 // Resource list in the hardware description
+	REG_RESOURCE_REQUIREMENTS_LIST = 10
+	REG_QWORD                      = 11 // 64-bit number
+	REG_QWORD_LITTLE_ENDIAN        = 11 // 64-bit number (same as REG_QWORD)
+
+)
+
 const (
 	SE_CREATE_TOKEN_NAME           = "SeCreateTokenPrivilege"
 	SE_ASSIGNPRIMARYTOKEN_NAME     = "SeAssignPrimaryTokenPrivilege"
@@ -99,25 +120,6 @@ const (
 )
 
 const (
-	REG_NONE      uint64 = 0 // No value type
-	REG_SZ               = 1 // Unicode nul terminated string
-	REG_EXPAND_SZ        = 2 // Unicode nul terminated string
-	// (with environment variable references)
-	REG_BINARY                     = 3 // Free form binary
-	REG_DWORD                      = 4 // 32-bit number
-	REG_DWORD_LITTLE_ENDIAN        = 4 // 32-bit number (same as REG_DWORD)
-	REG_DWORD_BIG_ENDIAN           = 5 // 32-bit number
-	REG_LINK                       = 6 // Symbolic Link (unicode)
-	REG_MULTI_SZ                   = 7 // Multiple Unicode strings
-	REG_RESOURCE_LIST              = 8 // Resource list in the resource map
-	REG_FULL_RESOURCE_DESCRIPTOR   = 9 // Resource list in the hardware description
-	REG_RESOURCE_REQUIREMENTS_LIST = 10
-	REG_QWORD                      = 11 // 64-bit number
-	REG_QWORD_LITTLE_ENDIAN        = 11 // 64-bit number (same as REG_QWORD)
-
-)
-
-const (
 	ANYSIZE_ARRAY = 1
 )
 
@@ -138,14 +140,15 @@ type TOKEN_PRIVILEGES struct {
 
 var (
 	// Library
-	libadvapi32           uintptr
+	libadvapi32 uintptr
 
 	// Functions
-	regCloseKey           uintptr
-	regOpenKeyEx          uintptr
-	regQueryValueEx       uintptr
-	regEnumValue          uintptr
-	regSetValueEx         uintptr
+	regCloseKey     uintptr
+	regOpenKeyEx    uintptr
+	regQueryValueEx uintptr
+	regEnumValue    uintptr
+	regSetValueEx   uintptr
+
 	openProcessToken      uintptr
 	lookupPrivilegeValueA uintptr
 	lookupPrivilegeValueW uintptr
@@ -162,6 +165,7 @@ func init() {
 	regQueryValueEx = MustGetProcAddress(libadvapi32, "RegQueryValueExW")
 	regEnumValue = MustGetProcAddress(libadvapi32, "RegEnumValueW")
 	regSetValueEx = MustGetProcAddress(libadvapi32, "RegSetValueExW")
+
 	openProcessToken = MustGetProcAddress(libadvapi32, "OpenProcessToken")
 	lookupPrivilegeValueW = MustGetProcAddress(libadvapi32, "LookupPrivilegeValueW")
 	lookupPrivilegeValueA = MustGetProcAddress(libadvapi32, "LookupPrivilegeValueA")
