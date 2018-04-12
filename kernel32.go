@@ -18,6 +18,8 @@ const (
 	ERROR_SUCCESS             = 0
 	ERROR_INVALID_FUNCTION    = 1
 	ERROR_FILE_NOT_FOUND      = 2
+	ERROR_PATH_NOT_FOUND      = 3
+	ERROR_BAD_FORMAT          = 11
 	ERROR_INVALID_PARAMETER   = 87
 	ERROR_INSUFFICIENT_BUFFER = 122
 	ERROR_MORE_DATA           = 234
@@ -52,33 +54,44 @@ const (
 	LOCALE_SISO639LANGNAME2  LCTYPE = 0x67
 )
 
+const (
+	STANDARD_RIGHTS_REQUIRED = 0xF0000
+	SYNCHRONIZE              = 0x100000
+	PROCESS_ALL_ACCESS       = STANDARD_RIGHTS_REQUIRED | SYNCHRONIZE | 0xFFF
+)
+
 var (
 	// Library
 	libkernel32 uintptr
 
 	// Functions
-	closeHandle                        uintptr
-	fileTimeToSystemTime               uintptr
-	getConsoleTitle                    uintptr
-	getConsoleWindow                   uintptr
-	getLastError                       uintptr
-	getLocaleInfo                      uintptr
-	getLogicalDriveStrings             uintptr
-	getModuleHandle                    uintptr
-	getNumberFormat                    uintptr
-	getPhysicallyInstalledSystemMemory uintptr
-	getProfileString                   uintptr
-	getThreadLocale                    uintptr
-	getThreadUILanguage                uintptr
-	getVersion                         uintptr
-	globalAlloc                        uintptr
-	globalFree                         uintptr
-	globalLock                         uintptr
-	globalUnlock                       uintptr
-	moveMemory                         uintptr
-	mulDiv                             uintptr
-	setLastError                       uintptr
-	systemTimeToFileTime               uintptr
+	closeHandle            uintptr
+	fileTimeToSystemTime   uintptr
+	getConsoleTitle        uintptr
+	getConsoleWindow       uintptr
+	getLastError           uintptr
+	getLocaleInfo          uintptr
+	getLogicalDriveStrings uintptr
+	getModuleHandle        uintptr
+	getNumberFormat        uintptr
+	getThreadLocale        uintptr
+	getThreadUILanguage    uintptr
+	getVersion             uintptr
+	globalAlloc            uintptr
+	globalFree             uintptr
+	globalLock             uintptr
+	globalUnlock           uintptr
+	moveMemory             uintptr
+	mulDiv                 uintptr
+	setLastError           uintptr
+	systemTimeToFileTime   uintptr
+	
+	getProfileString       uintptr
+	getCurrentProcess      uintptr
+	winExec                uintptr
+	openProcess            uintptr
+	setlocaltime           uintptr
+	
 )
 
 type (
@@ -130,7 +143,6 @@ func init() {
 	getLogicalDriveStrings = MustGetProcAddress(libkernel32, "GetLogicalDriveStringsW")
 	getModuleHandle = MustGetProcAddress(libkernel32, "GetModuleHandleW")
 	getNumberFormat = MustGetProcAddress(libkernel32, "GetNumberFormatW")
-	getPhysicallyInstalledSystemMemory, _ = syscall.GetProcAddress(syscall.Handle(libkernel32), "GetPhysicallyInstalledSystemMemory")
 	getProfileString = MustGetProcAddress(libkernel32, "GetProfileStringW")
 	getThreadLocale = MustGetProcAddress(libkernel32, "GetThreadLocale")
 	getThreadUILanguage, _ = syscall.GetProcAddress(syscall.Handle(libkernel32), "GetThreadUILanguage")
@@ -143,6 +155,12 @@ func init() {
 	mulDiv = MustGetProcAddress(libkernel32, "MulDiv")
 	setLastError = MustGetProcAddress(libkernel32, "SetLastError")
 	systemTimeToFileTime = MustGetProcAddress(libkernel32, "SystemTimeToFileTime")
+
+	getCurrentProcess = MustGetProcAddress(libkernel32, "GetCurrentProcess")
+	winExec = MustGetProcAddress(libkernel32, "WinExec")
+	openProcess = MustGetProcAddress(libkernel32, "OpenProcess")
+	setlocaltime = MustGetProcAddress(libkernel32, "SetLocalTime")
+	
 }
 
 func CloseHandle(hObject HANDLE) bool {
@@ -230,15 +248,6 @@ func GetNumberFormat(Locale LCID, dwFlags uint32, lpValue *uint16, lpFormat *NUM
 		uintptr(cchNumber))
 
 	return int32(ret)
-}
-
-func GetPhysicallyInstalledSystemMemory(totalMemoryInKilobytes *uint64) bool {
-	ret, _, _ := syscall.Syscall(getPhysicallyInstalledSystemMemory, 1,
-		uintptr(unsafe.Pointer(totalMemoryInKilobytes)),
-		0,
-		0)
-
-	return ret != 0
 }
 
 func GetProfileString(lpAppName, lpKeyName, lpDefault *uint16, lpReturnedString uintptr, nSize uint32) bool {
@@ -346,6 +355,44 @@ func SystemTimeToFileTime(lpSystemTime *SYSTEMTIME, lpFileTime *FILETIME) bool {
 		uintptr(unsafe.Pointer(lpSystemTime)),
 		uintptr(unsafe.Pointer(lpFileTime)),
 		0)
+
+	return ret != 0
+}
+
+func GetCurrentProcess() HANDLE {
+	ret, _, _ := syscall.Syscall(getCurrentProcess, 0,
+		0,
+		0,
+		0)
+
+	return HANDLE(ret)
+}
+
+func WinExec(lpCmdLine *byte, uCmdShow uint32) uint32 {
+	ret, _, _ := syscall.Syscall(winExec,
+		2,
+		uintptr(unsafe.Pointer(lpCmdLine)),
+		uintptr(uCmdShow),
+		0)
+
+	return uint32(ret)
+}
+
+func OpenProcess(dwDesiredAccess uint32, bInheritHandle bool, dwProcessId uint32) HANDLE {
+	ret, _, _ := syscall.Syscall(openProcess,
+		3,
+		uintptr(dwDesiredAccess),
+		uintptr(BoolToBOOL(bInheritHandle)),
+		uintptr(dwProcessId))
+
+	return HANDLE(ret)
+}
+
+func SetLocalTime(lpSystemTime *SYSTEMTIME) bool {
+	ret, _, _ := syscall.Syscall(setlocaltime, 1,
+		uintptr(unsafe.Pointer(lpSystemTime)),
+		0,
+	    0)
 
 	return ret != 0
 }
